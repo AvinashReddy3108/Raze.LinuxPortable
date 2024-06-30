@@ -1,0 +1,5 @@
+name: 'Build GZDoom inside Debian'
+description: 'Builds GZDoom inside the Debian Stable (latest) Container'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

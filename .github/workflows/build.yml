@@ -1,0 +1,87 @@
+name: "Build Raze"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: 🛒 Checkout repository
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          # We need this for the 'check_tag' step.
+          fetch-depth: 0
+
+      - name: 🔍 Determine latest Raze Stable version
+        id: versions
+        run: |
+          LATEST_STABLE="$(curl -sL "https://api.github.com/repos/ZDoom/Raze/releases" | jq -r '.[0].tag_name')"
+          echo "latest=$LATEST_STABLE" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: ❓ Check if we already built this version
+        id: check_tag
+        run: |
+          if git rev-parse --verify --quiet "refs/tags/${{ steps.versions.outputs.latest }}"; then
+            echo "Tag already exists, we can exit early!"; echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag does not exist, let's get cracking!"; echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: 🗃️ [ZMusic] Fetch the source code
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: 'ZDoom/ZMusic'
+          path: 'parts/zmusic/source_code'
+
+      - name: 🗃️ [Raze] Fetch the source code
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: actions/checkout@v4
+        with:
+          repository: 'ZDoom/Raze'
+          ref: ${{ steps.versions.outputs.latest }}
+          path: 'raze/source_code'
+
+      - name: 🏗️ Build
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: ./.github/actions/buildbox
+
+      - name: 📦️ Archive package
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          7z a \
+            -t7z \
+            -m0=lzma \
+            -mx=9 \
+            -mfb=64 \
+            -md=32m \
+            -ms=on \
+            "Raze.LinuxPortable_${{ steps.versions.outputs.latest }}.7z" ./out/*
+        shell: bash
+
+      - name: 🚚 Ship
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.versions.outputs.latest }}
+          name: "${{ steps.versions.outputs.latest }}"
+          body: |
+            ![Raze](https://github.com/AvinashReddy3108/Raze.LinuxPortable/assets/27774996/a8998558-2218-47c1-bb26-eba403f89b3c)
+
+            Read the changelog: https://github.com/ZDoom/Raze/releases/tag/${{ steps.versions.outputs.latest }}
+
+            # Notes
+            - The GTK+ based GUI components have been stripped out (flags: `NO_GTK=ON`) in favor of using shell scripts or external utilities to launch the games.
+                - For shell scripts, check the available [CLI Parameters](https://zdoom.org/wiki/Command_line_parameters).
+                - Alternatively, [community made utilities](https://zdoom.org/wiki/Frontend) can be used.
+          files: Raze.LinuxPortable_${{ steps.versions.outputs.latest }}.7z
