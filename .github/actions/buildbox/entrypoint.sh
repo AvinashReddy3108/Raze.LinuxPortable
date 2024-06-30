@@ -35,7 +35,6 @@ ldd out/raze | awk 'NF == 4 { system("cp -v " $3 " out/") }'
 cp -v /lib/x86_64-linux-gnu/libopenal.so.1 out/
 
 cp -Rv raze/source_code/build/soundfonts/ out/soundfonts
-cp -Rv raze/source_code/build/fm_banks/ out/fm_banks
 
 # [HACK] Force success, we'll handle this later
 exit 0
