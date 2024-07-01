@@ -23,7 +23,7 @@ jobs:
       - name: 🔍 Determine latest Raze Stable version
         id: versions
         run: |
-          LATEST_STABLE="$(curl -sL "https://api.github.com/repos/ZDoom/Raze/releases" | jq -r '.[0].tag_name')"
+          LATEST_STABLE="$(curl -sL "https://api.github.com/repos/ZDoom/Raze/releases/latest" | jq -r '.tag_name')"
           echo "latest=$LATEST_STABLE" >> $GITHUB_OUTPUT
         shell: bash
 
