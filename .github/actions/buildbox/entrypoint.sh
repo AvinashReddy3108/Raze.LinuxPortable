@@ -31,6 +31,8 @@ mkdir -pv out
 cp -v raze/source_code/build/raze out/
 cp -v raze/source_code/build/*.pk3 out/
 
+strip -v out/raze
+
 ldd out/raze | awk 'NF == 4 { system("cp -v " $3 " out/") }'
 cp -v /lib/x86_64-linux-gnu/libopenal.so.1 out/
 
